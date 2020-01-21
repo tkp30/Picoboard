@@ -3,8 +3,8 @@ import zipfile #内置
 import gzip #内置
 import os #内置
 
-import requests #pip install requests
-from picoboard import * #pip install https://github.com/drewarnett/pypicoboard/archive/master.zip
+import requests #(sudo)pip install requests
+from picoboard import * #git clone https://github.com/drewarnett/pypicoboard.git
 
 class Api(object):
     def __init__(self,usbport="COM4"):
@@ -58,58 +58,37 @@ class Api(object):
             print("找不到你的系统所需要的驱动。如果你是虚拟机，请前往http://www.picocricket.com/picoboardsetupUSB.html查看适合你的虚拟机安装的系统的驱动程序。")    
     def createpico(self,USB):
         '''创建PicoBoard对象'''
-        self.usb=USB
-        self.pico=PicoBoard(USB)
+        try:
+            self.usb=USB
+            self.pico=PicoBoard(USB)
+        except Exception as e:
+            raise ConnectionError(e)
     def getslider(self):
         '''获取滑杆数据'''
-        try:
-            return int(self.pico.read()["slider"]/10.23)
-        except:
-            self.pico.__init__(self.usb)
-            return int(self.pico.read()["slider"]/10.23)
+        return int(self.pico.read().get("slider",0)//10.23)
     def getlight(self):
         '''获取亮度数据'''
-        try:
-            return int(self.pico.read()["light"]/10.23)
-        except:
-            self.pico.__init__(self.usb)
-            return int(self.pico.read()["light"]/10.23)
+        return int(self.pico.read().get("light",0)//10.23)
     def getsound(self):
         '''获取声音数据'''
-        try:
-            return int(self.pico.read()["sound"]/10.23)
-        except:
-           self.pico.__init__(self.usb)
-           return int(self.pico.read()["sound"]/10.23)
+        return int(self.pico.read().get("sound",0)//10.23)
     def getbutton(self):
         '''获取按钮数据'''
-        try:
-            return not bool(self.pico.read()["button"])
-        except:
-            self.pico.__init__(self.usb)
-            return not bool(self.pico.read()["button"])
+        return not bool(self.pico.read().get("button",False))
     def getresistance(self,port):
-        '''获取电阻数据'''
-        try:
-            return int(self.pico.read()[port]/10.23)
-        except:
-            self.pico.__init__(self.usb)
-            return int(self.pico.read()[port]/10.23)
+        return int(self.pico.read().get(port,0)//10.23)
     def get(self):
         '''以字典方式返回数据'''
-        try:
-            return self.pico.read()
-        except:
-            del self.pico
-            self.pico=PicoBoard(self.usb)
-            #self.pico.__init__(self.usb)
-            return self.pico.read()
-if __name__=="__main__":
-    p=Api()
-    print("======Test:on Windows 10 1903 Chinese version======")
-    while True:
-        if not p.get()["button"]:
-            print("Button clicked")
+        read=self.pico.read()
+        read["A"]=self.getresistance("A")
+        read["B"]=self.getresistance("B")
+        read["C"]=self.getresistance("C")
+        read["D"]=self.getresistance("D")
+        read["slider"]=self.getslider()
+        read["sound"]=self.getsound()
+        read["light"]=self.getlight()
+        read["button"]=not bool(read["button"])
+        return read
 
 
         
